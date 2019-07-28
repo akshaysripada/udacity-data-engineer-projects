@@ -1,0 +1,22 @@
+# Data Lake
+
+## Script description
+The Data Lake project uses one script to read data from S3, create the appropriate dataframes and write the data into parquet files. The script is described below:
+  1. etl.py: This script loads data from a S3 bucket and and dataframes are created for each of the five analytical tables. The dataframes are  written back to a S3 bucket in their respective folders as parwuet files.     
+etl.py must be run to process the data and create the parquet files.
+
+## Database context for Sparkify
+This database will be critical for analytics for the start up, Sparkify. The songs and artists table track all the data in the song library. The time and users tabels track when the individual user has logged into a session. The combination of the data in these tables would provide user's listening or song playing information. The songplays fact table used to query out user's listening activity. This data can play a critical role in shaping the business decisions at the start up.
+
+## Schema design
+  1. Songs: The song table has song_id as its string primary key and supporting columns such as song title, year of release and duration of the song. The table also has a artist_id column that links every song to the artist table. The two tables can be joined to query information such as, what are all the songs released by one artist and so on. The song information comes from song data files, and thus there is a posibility of duplicates. The statement for songs from song data uses the drop duplicates function to only insert unique songs.
+  2. Artists: The artist table has artist_id as its string primary key and supporting columns such as artist name, location, lattitude and longitude information. The artist information comes from song data files, and and thus there is a posibility of duplicates. The statement for artists from song data uses the drop duplicates function to only insert unique songs.
+  3. Users: The users table has user_id as its integer primary key and supporting varchar columns such as first name, last name, gender and level. The user_id can be used as the primary key to avoid duplicate users in the table. To make sure we only create one record per user from log data, we need to handle duplicates. The user_temp data frame is created to pick the most recent timestamp in the log data for every user_id. This information from the user_temp is then used to get the most up to date information about the user. This needs to be done especially for the level column in the user table. The users data frame should reflect the most up to date level of the user and thus if the user changes their level, the users table must make sure to pick the most recent level value.
+  4. Time: The time table does not have a primary key but contains every unique datetime timestamp in the log data files and the break down for the timestamp for every possible date unit.
+  5. Songplays: This fact table has songplay_id as a monotonically increasing id since every record is a new fact and every time we insert a new fact record the songpaly id is incremented. This is done using the monotonically_increasing_id fucntion in Spark. The information for start_time, user_id, session_id, login location and user agent come from the log data where as song_id and  artist_id information comes from the song data.
+
+
+## ETL pipeline
+The etl pipeline is done in two steps. The first step is to process the song data files to create song and artist tables and the second step is to process the log data files to create users, time and, songaplay tables. The two steps are described in further details below:
+ 1. load_song_data: This function refined the song data files to find the distinct songs and artists and loads the data into song and artist tables. The data is stored in S3 
+ 2. load_log_data: This functions runs the load queries for the songplay, song, artist, users and time table. The ISNERT statement is used to load data into these tables from the staging tables. The data for song and artist table comes from the staging_songs table. The data for users comes from the staging_events table. Songplay table is loaded by joining both the staging tables on song and artist information. The time table is populated with the unique timestamps found in the songplay table.
